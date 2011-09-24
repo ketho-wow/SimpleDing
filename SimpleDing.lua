@@ -3,7 +3,7 @@
 --- Created: 2011.02.25				---
 --- License: Public Domain			---
 ---------------------------------------
---- SimpleDing	v0.22  [2011.09.24]	---
+--- SimpleDing	v0.23  [2011.09.24]	---
 --- Ace3		r1032  [2011.06.29]	---
 ---------------------------------------
 -- http://wow.curse.com/downloads/wow-addons/details/simpleding.aspx
@@ -14,7 +14,7 @@ local SD = SimpleDing
 local ACR = LibStub("AceConfigRegistry-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 
-local VERSION = 0.22
+local VERSION = 0.23
 local gsub, time = gsub, time
 
 local GetGuildRosterInfo = GetGuildRosterInfo
@@ -24,15 +24,15 @@ local profile, char
 local playerLevel = UnitLevel("player")
 local playerDinged
 
-local levelTime -- Time on Levelup
+local TPM_total, TPM_current = 0, 0 -- event vars
+local TPM_total2, TPM_current2 -- backup event vars
+
+local levelTime -- accurate time on Levelup
 local currentTime, totalTime = 0, 0 -- estimated Time
 
-local TPM_total, TPM_current = 0, 0 -- (current) event vars
-local TPM_total2, TPM_current2 -- (old) event vars
-
 local filterPlayed -- used for filtering SimpleDing's /played requests
-
 local isStopwatch -- eligible for using the Blizzard Stopwatch
+
 local lastPlayed = time() -- timestamp of last /played request
 
 local function AddedTime()
@@ -143,7 +143,7 @@ function SD:OnEnable()
 
 	if profile.Stopwatch and playerLevel < 85 then
 		StopwatchFrame:Show()
-		StopwatchTicker.timer = currentTime
+		StopwatchTicker.timer = TPM_current + AddedTime()
 		Stopwatch_Play()
 	end
 
@@ -206,7 +206,7 @@ function SD:TIME_PLAYED_MSG(event, ...)
 		if profile.Stopwatch and isStopwatch then
 			Stopwatch_Pause()
 			self:ScheduleTimer(function()
-				StopwatchTicker.timer = currentTime
+				StopwatchTicker.timer = TPM_current + AddedTime()
 				Stopwatch_Play()
 			end, 30)
 		end
@@ -258,14 +258,14 @@ local function TimetoString(value)
 	local fhours = b:GetText(b:SetFormattedText(D_HOURS, hours))
 	local fdays = b:GetText(b:SetFormattedText(D_DAYS, days))
 
-	if value >= 0 and value < 60 then
-		return fseconds
-	elseif value >= 60 and value < 3600 then
-		return seconds > 0 and format("%s, %s", fminutes, fseconds) or fminutes
-	elseif value >= 3600 and value < 86400 then
-		return minutes > 0 and format("%s, %s", fhours, fminutes) or fhours
-	elseif value >= 86400 then
+	if value >= 86400 then
 		return hours > 0 and format("%s, %s", fdays, fhours) or fdays
+	elseif value >= 3600 then
+		return minutes > 0 and format("%s, %s", fhours, fminutes) or fhours
+	elseif value >= 60 then
+		return seconds > 0 and format("%s, %s", fminutes, fseconds) or fminutes
+	elseif value >= 0 then
+		return fseconds
 	end
 end
 
@@ -277,7 +277,7 @@ function SD:ReplaceText(msg, example)
 	if not msg then return "[ERROR] No Message" end
 
 	if example then
-		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", "|cffADFF2F"..playerLevel+1 .."|r")
+		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", "|cffADFF2F"..(playerLevel == GetMaxPlayerLevel() and "[Max Level]" or player.level + 1).."|r")
 		msg = msg:gsub("%[[Tt][Ii][Mm][Ee]%]", "|cff71D5FF"..TimetoString(currentTime).."|r")
 		msg = msg:gsub("%[[Tt][Oo][Tt][Aa][Ll]%]", "|cff71D5FF"..TimetoString(totalTime).."|r")
 	else 
@@ -306,6 +306,7 @@ end
 local cd = 0
 local guild = {}
 local msgcolor = {r=1, g=1, b=1}
+local playerName = UnitName("player")
 
 function SD:GUILD_ROSTER_UPDATE()
 	if time() > cd then -- throttle
@@ -314,7 +315,7 @@ function SD:GUILD_ROSTER_UPDATE()
 			for i = 1, GetNumGuildMembers() do
 				local name, _, _, level, _, _, _, _, _, _, englishClass = GetGuildRosterInfo(i)
 				-- sanity checks
-				if name and guild[name] and level > guild[name] then
+				if name and guild[name] and level > guild[name] and name ~= playerName then
 					RaidNotice_AddMessage(RaidWarningFrame, format("|cff%s%s|r dinged %s |cffADFF2F%s|r", GetClassColor(englishClass), name, LEVEL, level), msgcolor)
 				end
 				guild[name] = level
@@ -352,7 +353,7 @@ local TIME_PLAYED_LEVEL_TEXT = gsub(TIME_PLAYED_LEVEL, "%%s", "")
 local function TooltipXPline()
 	local curxp = UnitXP("player")
 	local maxxp = UnitXPMax("player")
-	return format("|cffADFF2F%s|r / |cff71D5FF%s|r = |cffFFFFFF%s%%|r", curxp, maxxp, floor((curxp/maxxp)*100))
+	return format("|cffADFF2F%d|r / |cff71D5FF%d|r = |cffFFFFFF%d%%|r", curxp, maxxp, (curxp/maxxp)*100)
 end
 
 local dataobject = {
@@ -368,8 +369,8 @@ local dataobject = {
 	OnTooltipShow = function(tt)
 		tt:AddLine("|cffADFF2FSimpleDing|r")
 		tt:AddDoubleLine(EXPERIENCE_COLON, TooltipXPline())
-		tt:AddDoubleLine(TIME_PLAYED_TOTAL_TEXT, "|cffFFFFFF"..format(TIME_DAYHOURMINUTESECOND, unpack( {ChatFrame_TimeBreakDown(currentTime)} )).."|r")
-		tt:AddDoubleLine(TIME_PLAYED_LEVEL_TEXT, "|cffFFFFFF"..format(TIME_DAYHOURMINUTESECOND, unpack( {ChatFrame_TimeBreakDown(TPM_total + AddedTime())} )).."|r")
+		tt:AddDoubleLine(TIME_PLAYED_TOTAL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(currentTime)} )))
+		tt:AddDoubleLine(TIME_PLAYED_LEVEL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(TPM_total + AddedTime())} )))
 		tt:AddLine("|cffFFFFFFClick|r to open the options menu")
 	end,
 }
