@@ -3,7 +3,7 @@
 --- Created: 2011.02.25				---
 --- License: Public Domain			---
 ---------------------------------------
---- SimpleDing	v0.21  [2011.09.22]	---
+--- SimpleDing	v0.22  [2011.09.24]	---
 --- Ace3		r1032  [2011.06.29]	---
 ---------------------------------------
 -- http://wow.curse.com/downloads/wow-addons/details/simpleding.aspx
@@ -14,7 +14,7 @@ local SD = SimpleDing
 local ACR = LibStub("AceConfigRegistry-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 
-local VERSION = 0.21
+local VERSION = 0.22
 local gsub, time = gsub, time
 
 local GetGuildRosterInfo = GetGuildRosterInfo
@@ -303,7 +303,7 @@ local function GetClassColor(class)
 	end
 end
 
-local cd
+local cd = 0
 local guild = {}
 local msgcolor = {r=1, g=1, b=1}
 
