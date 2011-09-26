@@ -277,7 +277,7 @@ function SD:ReplaceText(msg, example)
 	if not msg then return "[ERROR] No Message" end
 
 	if example then
-		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", "|cffADFF2F"..(playerLevel == GetMaxPlayerLevel() and "[Max Level]" or playerlevel + 1).."|r")
+		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", "|cffADFF2F"..(playerLevel == GetMaxPlayerLevel() and "[Max Level]" or playerLevel + 1).."|r")
 		msg = msg:gsub("%[[Tt][Ii][Mm][Ee]%]", "|cff71D5FF"..TimetoString(currentTime).."|r")
 		msg = msg:gsub("%[[Tt][Oo][Tt][Aa][Ll]%]", "|cff71D5FF"..TimetoString(totalTime).."|r")
 	else 
