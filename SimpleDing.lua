@@ -3,7 +3,7 @@
 --- Created: 2011.02.25				---
 --- License: Public Domain			---
 ---------------------------------------
---- SimpleDing	v0.23  [2011.09.24]	---
+--- SimpleDing	v0.24  [2011.09.26]	---
 --- Ace3		r1032  [2011.06.29]	---
 ---------------------------------------
 -- http://wow.curse.com/downloads/wow-addons/details/simpleding.aspx
@@ -14,7 +14,7 @@ local SD = SimpleDing
 local ACR = LibStub("AceConfigRegistry-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 
-local VERSION = 0.23
+local VERSION = 0.24
 local gsub, time = gsub, time
 
 local GetGuildRosterInfo = GetGuildRosterInfo
@@ -277,7 +277,7 @@ function SD:ReplaceText(msg, example)
 	if not msg then return "[ERROR] No Message" end
 
 	if example then
-		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", "|cffADFF2F"..(playerLevel == GetMaxPlayerLevel() and "[Max Level]" or player.level + 1).."|r")
+		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", "|cffADFF2F"..(playerLevel == GetMaxPlayerLevel() and "[Max Level]" or playerlevel + 1).."|r")
 		msg = msg:gsub("%[[Tt][Ii][Mm][Ee]%]", "|cff71D5FF"..TimetoString(currentTime).."|r")
 		msg = msg:gsub("%[[Tt][Oo][Tt][Aa][Ll]%]", "|cff71D5FF"..TimetoString(totalTime).."|r")
 	else 

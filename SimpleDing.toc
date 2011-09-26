@@ -1,6 +1,6 @@
 ## Interface: 40200
-## Version: 0.23
-## Title: SimpleDing |cffADFF2Fv0.23|r
+## Version: 0.24
+## Title: SimpleDing |cffADFF2Fv0.24|r
 ## Author: Ketho @ EU-Boulderfist
 ## Notes: Leveling AddOn
 ## SavedVariables: SimpleDingDB
