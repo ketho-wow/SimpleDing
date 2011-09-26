@@ -3,7 +3,7 @@
 --- Created: 2011.02.25				---
 --- License: Public Domain			---
 ---------------------------------------
---- SimpleDing	v0.24  [2011.09.26]	---
+--- SimpleDing	v0.25  [2011.09.26]	---
 --- Ace3		r1032  [2011.06.29]	---
 ---------------------------------------
 -- http://wow.curse.com/downloads/wow-addons/details/simpleding.aspx
@@ -14,7 +14,7 @@ local SD = SimpleDing
 local ACR = LibStub("AceConfigRegistry-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 
-local VERSION = 0.24
+local VERSION = 0.25
 local gsub, time = gsub, time
 
 local GetGuildRosterInfo = GetGuildRosterInfo
@@ -203,7 +203,7 @@ function SD:TIME_PLAYED_MSG(event, ...)
 		end
 		
 		-- temporarily pause Stopwatch
-		if profile.Stopwatch and isStopwatch then
+		if profile.Stopwatch and playerLevel < 85 and TPM_current < MAX_TIMER_SEC then
 			Stopwatch_Pause()
 			self:ScheduleTimer(function()
 				StopwatchTicker.timer = TPM_current + AddedTime()
@@ -212,9 +212,9 @@ function SD:TIME_PLAYED_MSG(event, ...)
 		end
 	else
 		if profile.Stopwatch then
-			if isStopwatch then
+			if playerLevel < 85 and TPM_current < MAX_TIMER_SEC then
 				-- currentTime var isn't updated yet
-				StopwatchTicker.timer = TPM_current + AddedTime()
+				StopwatchTicker.timer = TPM_current
 			else
 				Stopwatch_Clear()
 				StopwatchFrame:Hide()
