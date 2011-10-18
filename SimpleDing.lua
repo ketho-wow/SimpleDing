@@ -2,19 +2,20 @@
 --- Author: Ketho (EU-Boulderfist)	---
 --- Created: 2011.02.25				---
 --- License: Public Domain			---
----------------------------------------
---- SimpleDing	v0.26  [2011.09.26]	---
---- Ace3		r1032  [2011.06.29]	---
+--- Version: v0.27					---
 ---------------------------------------
 -- http://wow.curse.com/downloads/wow-addons/details/simpleding.aspx
 -- http://www.wowinterface.com/downloads/info19479-SimpleDing.html
+
+local VERSION = 0.27
+local FILETYPE = "Release"
 
 SimpleDing = LibStub("AceAddon-3.0"):NewAddon("SimpleDing", "AceEvent-3.0", "AceTimer-3.0", "AceConsole-3.0")
 local SD = SimpleDing
 local ACR = LibStub("AceConfigRegistry-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 
-local VERSION = 0.26
+local _G = _G
 local gsub, time = gsub, time
 
 local GetGuildRosterInfo = GetGuildRosterInfo
@@ -24,16 +25,16 @@ local profile, char
 local playerLevel = UnitLevel("player")
 local playerDinged
 
-local TPM_total, TPM_current = 0, 0 -- event vars
-local TPM_total2, TPM_current2 -- backup event vars
+local TPM_total, TPM_current = 0, 0		-- event vars
+local TPM_total2, TPM_current2			-- backup event vars
 
-local levelTime -- accurate time on Levelup
-local currentTime, totalTime = 0, 0 -- estimated Time
+local levelTime							-- accurate time on Levelup
+local currentTime, totalTime = 0, 0		-- estimated Time
 
-local filterPlayed -- used for filtering SimpleDing's /played requests
-local isStopwatch -- eligible for using the Blizzard Stopwatch
+local filterPlayed						-- used for filtering SimpleDing's /played requests
+local isStopwatch						-- eligible for using the Blizzard Stopwatch
 
-local lastPlayed = time() -- timestamp of last /played request
+local lastPlayed = time()				-- timestamp of last /played request
 
 local function AddedTime()
 	return time() - lastPlayed
@@ -130,7 +131,7 @@ function SD:OnInitialize()
 	self:RegisterChatCommand("simpleding", "SlashCmd")
 
 	self.db.global.version = VERSION
-	self.db.global.fileType = "Release"
+	self.db.global.fileType = FILETYPE
 
 	char.levelTime = char.levelTime or {}
 	char.totalTime = char.totalTime or {}
@@ -224,7 +225,11 @@ function SD:TIME_PLAYED_MSG(event, ...)
 
 	-- update stuff
 	TPM_total2, TPM_current2 = TPM_total, TPM_current
-	ACR:NotifyChange("SimpleDing")
+	if InterfaceOptionsFrame:IsShown() then
+		currentTime = TPM_current + AddedTime()
+		totalTime = TPM_total + AddedTime()
+		ACR:NotifyChange("SimpleDing")
+	end
 end
 
 	-----------------------
@@ -298,7 +303,8 @@ local function GetClassColor(class)
 	if cache[class] then
 		return cache[class]
 	else
-		cache[class] = format("%02X%02X%02X", RAID_CLASS_COLORS[class].r*255, RAID_CLASS_COLORS[class].g*255, RAID_CLASS_COLORS[class].b*255)
+		local classColorTable = RAID_CLASS_COLORS[class]
+		cache[class] = format("%02X%02X%02X", classColorTable.r*255, classColorTable.g*255, classColorTable.b*255)
 		return cache[class]
 	end
 end
@@ -343,6 +349,20 @@ local function TimetoMilitaryTime(value)
 	end
 end
 
+	----------------------
+	--- Filter /played ---
+	----------------------
+
+local oldChatFrame_DisplayTimePlayed = ChatFrame_DisplayTimePlayed
+
+function ChatFrame_DisplayTimePlayed(...)
+	-- using /played manually should still work
+	if not filterPlayed then
+		oldChatFrame_DisplayTimePlayed(...)
+	end
+	filterPlayed = false
+end
+
 	---------------------
 	--- LibDataBroker ---
 	---------------------
@@ -369,8 +389,8 @@ local dataobject = {
 	OnTooltipShow = function(tt)
 		tt:AddLine("|cffADFF2FSimpleDing|r")
 		tt:AddDoubleLine(EXPERIENCE_COLON, TooltipXPline())
-		tt:AddDoubleLine(TIME_PLAYED_TOTAL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(currentTime)} )))
-		tt:AddDoubleLine(TIME_PLAYED_LEVEL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(TPM_total + AddedTime())} )))
+		tt:AddDoubleLine(TIME_PLAYED_LEVEL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(currentTime)} )))
+		tt:AddDoubleLine(TIME_PLAYED_TOTAL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(TPM_total + AddedTime())} )))
 		tt:AddLine("|cffFFFFFFClick|r to open the options menu")
 	end,
 }
@@ -384,17 +404,3 @@ else
 end
 
 LDB:NewDataObject("SimpleDing", dataobject)
-
-	----------------------
-	--- Filter /played ---
-	----------------------
-
-local oldChatFrame_DisplayTimePlayed = ChatFrame_DisplayTimePlayed
-
-function ChatFrame_DisplayTimePlayed(...)
-	-- using /played manually should still work
-	if not filterPlayed then
-		oldChatFrame_DisplayTimePlayed(...)
-	end
-	filterPlayed = false
-end
