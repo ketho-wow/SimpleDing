@@ -1,8 +1,8 @@
 package-as: SimpleDing
 
 externals:
-  Libs/Libstub:
-    url: svn://svn.wowace.com/wow/libstub/mainline/trunk
+  Libs/LibStub:
+    url: svn://svn.wowace.com/wow/libstub/mainline/trunk/LibStub.lua
     tag: latest
   Libs/CallbackHandler-1.0:
     url: svn://svn.wowace.com/wow/callbackhandler/mainline/trunk/CallbackHandler-1.0
