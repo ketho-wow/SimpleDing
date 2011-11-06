@@ -7,7 +7,7 @@
 -- http://wow.curse.com/downloads/wow-addons/details/simpleding.aspx
 -- http://www.wowinterface.com/downloads/info19479-SimpleDing.html
 
--- bumpcommit1
+-- bumpcommit2
 
 local VERSION = 0.27
 local FILETYPE = "Release"
