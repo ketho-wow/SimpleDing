@@ -1,8 +1,8 @@
-## Interface: 40200
-## Version: @project-version@
+## Interface: 40300
+## Version: 0.3
 ## Title: SimpleDing
-## Author: Ketho @ EU-Boulderfist
 ## Notes: Leveling AddOn
+## Author: Ketho @ EU-Boulderfist
 ## SavedVariables: SimpleDingDB
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
