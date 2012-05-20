@@ -2,257 +2,68 @@
 --- Author: Ketho (EU-Boulderfist)		---
 --- License: Public Domain				---
 --- Created: 2011.02.25					---
---- Version: 0.3 [2011.11.30]			---
+--- Version: 0.4 [2012.05.20]			---
 -------------------------------------------
 --- Curse			http://www.curse.com/addons/wow/simpleding
 --- WoWInterface	http://www.wowinterface.com/downloads/info19479-SimpleDing.html
 
-local NAME = ...
-local VERSION = 0.3
+local NAME, S = ...
+local VERSION = 0.4
 local BUILD = "Release"
 
-local _G = _G
-local gsub, time = gsub, time
-
-SimpleDing = LibStub("AceAddon-3.0"):NewAddon(NAME, "AceEvent-3.0", "AceTimer-3.0", "AceConsole-3.0")
-local SD = SimpleDing
-
+local AT = LibStub("AceTimer-3.0")
 local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
 
-local profile, char
+local db
 
-local playerDinged
-local playerLevel = UnitLevel("player")
-local MAX_PLAYER_LEVEL = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
+local time = time
+local format, gsub = format, gsub
+local floor = floor
 
-local TPM_total, TPM_current = 0, 0	-- event vars
-local TPM_total2, TPM_current2		-- backup event vars
+local GetGuildRosterInfo = GetGuildRosterInfo
 
-local levelTime						-- accurate time on Levelup
-local currentTime, totalTime = 0, 0	-- estimated time
+	-----------------
+	--- Time Vars ---
+	-----------------
 
-local filterPlayed					-- filter SimpleDing's /played requests
-local isStopwatch					-- can use the Blizzard Stopwatch
+S.lastPlayed = time()
+S.totalTPM, S.curTPM = 0, 0
+local curTPM2, totalTPM2
 
-local lastPlayed = time()			-- timestamp of last /played request
+	------------
+	--- Rest ---
+	------------
 
-local cropped = ":64:64:4:60:4:60"
+local filterPlayed
 
-local function AddedTime()
-	return time() - lastPlayed
-end
+local crop = ":64:64:4:60:4:60"
+local args = {}
 
-	---------------
-	--- Options ---
-	---------------
+	--------------
+	--- Player ---
+	--------------
 
-local defaults = {
-	profile = {
-		dingMsg = "Ding! "..LEVEL.." [LEVEL] in [TIME]"
-	}
+S.player = {
+	name = UnitName("player"),
+	level = UnitLevel("player"),
+	maxlevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()],
 }
-
-local options = {
-	type = "group",
-	name = NAME.." |cffADFF2Fv"..VERSION.."|r",
-	handler = SD,
-	args = {
-		inline = {
-			type = "group", order = 1,
-			name = " ",
-			inline = true,
-			args = {
-				GuildAnnounce = {
-					type = "toggle", order = 1,
-					width = "full", descStyle = "",
-					name = "|TInterface\\Icons\\Ability_Warrior_RallyingCry:16:16:1:0"..cropped.."|t  |cff40FF40"..GUILD.."|r "..CHAT_ANNOUNCE,
-					get = "GetValue", set = "SetValue",
-				},
-				GuildMemberDings = {
-					type = "toggle", order = 2,
-					descStyle = "",
-					name = "|TInterface\\GuildFrame\\GuildLogo-NoLogo:16:16:1:0:64:64:14:51:14:51|t  |cff40FF40"..GUILD.."|r Dings",
-					get = "GetValue", set = "SetValue",
-				},
-				Screenshot = {
-					type = "toggle", order = 3,
-					width = "full", descStyle = "",
-					name = "|TInterface\\Icons\\inv_misc_spyglass_03:16:16:1:0"..cropped.."|t  "..BINDING_NAME_SCREENSHOT,
-					get = "GetValue", set = "SetValue",
-				},
-				Stopwatch = {
-					type = "toggle", order = 4,
-					desc = TIMEMANAGER_SHOW_STOPWATCH,
-					name = "|TInterface\\Icons\\Spell_Holy_BorrowedTime:16:16:2:0"..cropped.."|t  "..STOPWATCH_TITLE,
-					get = function(i) return profile.Stopwatch end,
-					set = function(i, v) profile.Stopwatch = v
-						if v then
-							if isStopwatch then
-								StopwatchFrame:Show()
-								StopwatchTicker.timer = currentTime
-								Stopwatch_Play()
-							end
-						else
-							Stopwatch_Clear()
-							StopwatchFrame:Hide()
-						end
-					end,
-				},
-			},
-		},
-		DingMessage = {
-			type = "input", order = 2,
-			width = "full",
-			name = " ",
-			usage = "\n|cffADFF2F[LEVEL]|r |cffFFFFFF= New "..LEVEL.."|r\n|cff71D5FF[TIME]|r |cffFFFFFF= Level Time|r\n|cff71D5FF[TOTAL]|r |cffFFFFFF= Total Time|r",
-			get = function(i) return profile.dingMsg end,
-			set = function(i, v) profile.dingMsg = v
-				if #strtrim(v) == 0 then profile.dingMsg = defaults.profile.dingMsg end
-			end,
-		},
-		Example = {
-			type = "description", order = 3,
-			name = function() return "   "..SD:ReplaceText(profile.dingMsg, true) end,
-		},
-	},
-}
-
-function SD:GetValue(i)
-	return profile[i[#i]]
-end
-
-function SD:SetValue(i, v)
-	profile[i[#i]] = v
-end
-
-	----------------------
-	--- Initialization ---
-	----------------------
-
-function SD:OnInitialize()
-	self.db = LibStub("AceDB-3.0"):New("SimpleDingDB", defaults, true)
-	profile, char = self.db.profile, self.db.char
-	ACR:RegisterOptionsTable("SimpleDing", options)
-	self.optionsFrame = ACD:AddToBlizOptions("SimpleDing", NAME)
-
-	self:RegisterChatCommand("sd", "SlashCmd")
-	self:RegisterChatCommand("simpleding", "SlashCmd")
-
-	self.db.global.version = VERSION
-	self.db.global.build = BUILD
-
-	char.levelTime = char.levelTime or {}
-	char.totalTime = char.totalTime or {}
-end
-
-function SD:OnEnable()
-	self:RegisterEvent("PLAYER_LEVEL_UP")
-	self:RegisterEvent("TIME_PLAYED_MSG")
-	self:RegisterEvent("GUILD_ROSTER_UPDATE")
-
-	if profile.Stopwatch and playerLevel < 85 then
-		StopwatchFrame:Show()
-		StopwatchTicker.timer = TPM_current + AddedTime()
-		Stopwatch_Play()
-	end
-
-	-- grab /played
-	self:ScheduleTimer(function()
-		if TPM_total == 0 then
-			filterPlayed = true
-			RequestTimePlayed()
-		end
-	end, 5)
-
-	-- update guild roster
-	self:ScheduleRepeatingTimer(function()
-		GuildRoster()
-	end, 11)
-
-	-- update estimated time
-	self:ScheduleRepeatingTimer(function()
-		currentTime = TPM_current + AddedTime()
-		totalTime = TPM_total + AddedTime()
-		isStopwatch = playerLevel < 85 and currentTime < MAX_TIMER_SEC
-	end, 1)
-end
-
-function SD:SlashCmd(input)
-	InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)
-end
+local player = S.player
 
 	--------------
 	--- Events ---
 	--------------
 
-function SD:PLAYER_LEVEL_UP(event, level)
-	playerLevel = level
-	playerDinged, filterPlayed = true, true
-	RequestTimePlayed()
-end
+local events = {
+	"PLAYER_LEVEL_UP",
+	"TIME_PLAYED_MSG",
+	"GUILD_ROSTER_UPDATE",
+}
 
-function SD:TIME_PLAYED_MSG(event, ...)
-	TPM_total, TPM_current = ...
-	lastPlayed = time()
-
-	if playerDinged then
-		playerDinged = false
-
-		local prevTime = char.totalTime[playerLevel-1]
-		if prevTime then
-			levelTime = TPM_total - prevTime
-		else
-			-- fall back to less accurate data
-			levelTime = TPM_current2 + (TPM_total - TPM_total2)
-		end
-
-		char.levelTime[playerLevel] = levelTime
-		char.totalTime[playerLevel] = TPM_total
-
-		-- announce stuff
-		local text = self:ReplaceText(profile.dingMsg)
-		SendChatMessage(text, GetNumPartyMembers() > 0 and "PARTY" or "SAY")
-		if profile.GuildAnnounce and IsInGuild() then
-			SendChatMessage(text, "GUILD")
-		end
-
-		if profile.Screenshot then
-			self:ScheduleTimer(function() Screenshot() end, 1)
-		end
-
-		-- temporarily pause Stopwatch
-		if profile.Stopwatch and playerLevel < 85 and TPM_current < MAX_TIMER_SEC then
-			Stopwatch_Pause()
-			self:ScheduleTimer(function()
-				StopwatchTicker.timer = TPM_current + AddedTime()
-				Stopwatch_Play()
-			end, 30)
-		end
-	else
-		if profile.Stopwatch then
-			if playerLevel < 85 and TPM_current < MAX_TIMER_SEC then
-				-- currentTime var isn't updated yet
-				StopwatchTicker.timer = TPM_current
-			else
-				Stopwatch_Clear()
-				StopwatchFrame:Hide()
-			end
-		end
-	end
-
-	-- update stuff
-	TPM_total2, TPM_current2 = TPM_total, TPM_current
-	currentTime = TPM_current + AddedTime()
-	totalTime = TPM_total + AddedTime()
-	if InterfaceOptionsFrame:IsShown() then
-		ACR:NotifyChange("SimpleDing")
-	end
-end
-
-	-----------------------
-	--- Time Formatting ---
-	-----------------------
+	------------
+	--- Time ---
+	------------
 
 -- not capitalized
 local D_SECONDS = strlower(D_SECONDS)
@@ -270,151 +81,290 @@ end
 
 local b = CreateFrame("Button")
 
-local function TimetoString(value)
-	local seconds = mod(floor(value), 60)
-	local minutes = mod(floor(value/60), 60)
-	local hours = mod(floor(value/3600), 24)
-	local days = floor(value/86400)
-
-	local fseconds = b:GetText(b:SetFormattedText(D_SECONDS, seconds))
-	local fminutes = b:GetText(b:SetFormattedText(D_MINUTES, minutes))
-	local fhours = b:GetText(b:SetFormattedText(D_HOURS, hours))
-	local fdays = b:GetText(b:SetFormattedText(D_DAYS, days))
-
-	if value >= 86400 then
-		return hours > 0 and format("%s, %s", fdays, fhours) or fdays
-	elseif value >= 3600 then
-		return minutes > 0 and format("%s, %s", fhours, fminutes) or fhours
-	elseif value >= 60 then
-		return seconds > 0 and format("%s, %s", fminutes, fseconds) or fminutes
-	elseif value >= 0 then
-		return fseconds
+local function Time(v)
+	local sec = floor(v) % 60
+	local minute = floor(v/60) % 60
+	local hour = floor(v/3600) % 24
+	local day = floor(v/86400)
+	
+	local fsec = format(D_SECONDS, sec)
+	local fmin = format(D_MINUTES, minute)
+	local fhour = format(D_HOURS, hour)
+	local fday = format(D_DAYS, day)
+	
+	local s
+	if v >= 86400 then
+		s = format("%s, %s", fday, fhour)
+	elseif v >= 3600 then
+		s = format("%s, %s", fhour, fmin)
+	elseif v >= 60 then
+		s = format("%s, %s", fmin, fsec)
+	elseif v >= 0 then
+		s = fsec
+	else
+		s = v
 	end
+	-- sanitize for SendChatMessage by removing any pipe characters
+	return b:GetText(b:SetText(s)) or ""
 end
 
-	-----------------------
-	--- Substitute Text ---
-	-----------------------
+	--------------------
+	--- Class Colors ---
+	--------------------
 
-function SD:ReplaceText(msg, example)
-	if not msg then return "[ERROR] No Message" end
+local classCache = setmetatable({}, {__index = function(t, k)
+	local color = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[k] or RAID_CLASS_COLORS[k]
+	local v = format("%02X%02X%02X", color.r*255, color.g*255, color.b*255)
+	rawset(t, k, v)
+	return v
+end})
 
-	if example then
-		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", "|cffADFF2F"..(playerLevel == MAX_PLAYER_LEVEL and "[Max Level]" or playerLevel + 1).."|r")
-		msg = msg:gsub("%[[Tt][Ii][Mm][Ee]%]", "|cff71D5FF"..TimetoString(currentTime).."|r")
-		msg = msg:gsub("%[[Tt][Oo][Tt][Aa][Ll]%]", "|cff71D5FF"..TimetoString(totalTime).."|r")
-	else 
-		msg = msg:gsub("%[[Ll][Ee][Vv][Ee][Ll]%]", playerLevel)
-		msg = msg:gsub("%[[Tt][Ii][Mm][Ee]%]", TimetoString(levelTime))
-		msg = msg:gsub("%[[Tt][Oo][Tt][Aa][Ll]%]", TimetoString(TPM_total))
+	---------------
+	--- Replace ---
+	---------------
+
+local function ReplaceArgs(msg, args)
+	for k in gmatch(msg, "%b<>") do
+		-- remove <>, make case insensitive
+		local s = strlower(gsub(k, "[<>]", ""))
+		
+		-- escape special characters
+		-- a maybe better alternative to %p is "[%%%.%-%+%?%*%^%$%(%)%[%]%{%}]"
+		s = gsub(args[s] or s, "(%p)", "%%%1")
+		k = gsub(k, "(%p)", "%%%1")
+		
+		msg = msg:gsub(k, s)
 	end
 	return msg
 end
 
-	--------------------------
-	--- Guild Member Dings ---
-	--------------------------
-
-local cache = {}
-
-local function GetClassColor(class)
-	if cache[class] then
-		return cache[class]
-	else
-		local color = RAID_CLASS_COLORS[class]
-		cache[class] = format("%02X%02X%02X", color.r*255, color.g*255, color.b*255)
-		return cache[class]
-	end
-end
-
-local cd = 0
-local guild, msgcolor = {}, {r=1, g=1, b=1}
-local playerName = UnitName("player")
-local GetGuildRosterInfo = GetGuildRosterInfo
-
-function SD:GUILD_ROSTER_UPDATE()
-	if time() > cd then -- throttle
-		cd = time() + 2
-		if IsInGuild() and profile.GuildMemberDings then
-			for i = 1, GetNumGuildMembers() do
-				local name, _, _, level, _, _, _, _, _, _, englishClass = GetGuildRosterInfo(i)
-				-- sanity checks
-				if name and guild[name] and level > guild[name] and name ~= playerName then
-					RaidNotice_AddMessage(RaidWarningFrame, format("|cff%s%s|r dinged %s |cffADFF2F%s|r", GetClassColor(englishClass), name, LEVEL, level), msgcolor)
-				end
-				guild[name] = level
+local function LevelText(msg, args, isPreview)
+	wipe(args)
+	if isPreview then
+		args.level = "|cffADFF2F"..(player.level == player.maxlevel and player.level or player.level + 1).."|r"
+		args["level-"] = "|cffF6ADC6"..player.level.."|r"
+		args.time = "|cff71D5FF"..Time(S.curTPM + time() - S.lastPlayed).."|r"
+		args.total = "|cff71D5FF"..Time(S.totalTPM + time() - S.lastPlayed).."|r"
+		-- raid targets
+		for k in gmatch(msg, "%b{}") do
+			local rt = strlower(gsub(k, "[{}]", ""))
+			if ICON_TAG_LIST[rt] and ICON_LIST[ICON_TAG_LIST[rt]] then
+				msg = msg:gsub(k, ICON_LIST[ICON_TAG_LIST[rt]].."16:16:0:3|t")
 			end
 		end
+	else
+		args.level = player.level
+		args["level-"] = player.level - 1
+		args.time = Time(S.LevelTime)
+		args.total = Time(S.totalTPM)
+		
 	end
+	return ReplaceArgs(msg, args)
+end
+
+	---------------------
+	--- Slash Command ---
+	---------------------
+
+local slashCmds = {"sd", "simpleding"}
+
+for i, v in ipairs(slashCmds) do
+	_G["SLASH_SIMPLEDING"..i] = "/"..v
+end
+
+SlashCmdList.SIMPLEDING = function(msg, editbox)
+	ACD:Open(NAME)
 end
 
 	----------------------
 	--- Filter /played ---
 	----------------------
 
-local oldChatFrame_DisplayTimePlayed = ChatFrame_DisplayTimePlayed
+local old = ChatFrame_DisplayTimePlayed
 
 function ChatFrame_DisplayTimePlayed(...)
-	-- using /played manually should still work
+	-- using /played manually should still work, including when it's called by other addons
+	-- when filterPlayed is true it will just only filter the next upcoming /played message
 	if not filterPlayed then
-		oldChatFrame_DisplayTimePlayed(...)
+		old(...)
 	end
 	filterPlayed = false
 end
 
-	---------------------
-	--- LibDataBroker ---
-	---------------------
+	---------------
+	--- Options ---
+	---------------
 
-local TIME_PLAYED_TOTAL_TEXT = gsub(TIME_PLAYED_TOTAL, "%%s", "")
-local TIME_PLAYED_LEVEL_TEXT = gsub(TIME_PLAYED_LEVEL, "%%s", "")
-
-local function TooltipXPline()
-	local curxp = UnitXP("player")
-	local maxxp = UnitXPMax("player")
-	return format("|cffADFF2F%d|r / |cff71D5FF%d|r = |cffADFF2F%d%%|r", curxp, maxxp, (curxp/maxxp)*100)
-end
-
-local dataobject = {
-	type = playerLevel < 85 and "data source" or "launcher",
-	icon = "Interface\\Icons\\Spell_Holy_BorrowedTime",
-	OnClick = function(clickedframe, button)
-		if InterfaceOptionsFrame:IsShown() and InterfaceOptionsFramePanelContainer.displayedPanel.name == NAME then
-			InterfaceOptionsFrame:Hide()
-		else
-			InterfaceOptionsFrame_OpenToCategory(SD.optionsFrame)
-		end
-	end,
-	OnTooltipShow = function(tt)
-		tt:AddLine("|cffFFFFFF"..NAME.."|r")
-		tt:AddDoubleLine(EXPERIENCE_COLON, TooltipXPline())
-		tt:AddDoubleLine(TIME_PLAYED_LEVEL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(currentTime)} )))
-		tt:AddDoubleLine(TIME_PLAYED_TOTAL_TEXT, format("|cffFFFFFF"..TIME_DAYHOURMINUTESECOND.."|r", unpack( {ChatFrame_TimeBreakDown(TPM_total + AddedTime())} )))
-		tt:AddLine("|cffFFFFFFClick|r to open the options menu")
-	end,
+local defaults = {
+	DingMsg = "Ding! "..LEVEL.." <LEVEL> in <TIME>",
+	ShowGuild = true,
 }
 
-local function TimetoMilitaryTime(value)
-	local seconds = mod(floor(value), 60)
-	local minutes = mod(floor(value/60), 60)
-	local hours = mod(floor(value/3600), 24)
-	local days = floor(value/86400)
+local options = {
+	type = "group",
+	name = format("%s |cffADFF2Fv%s|r", NAME, VERSION),
+	get = function(i) return db[i[#i]] end,
+	set = function(i, v) db[i[#i]] = v end,
+	args = {
+		inline1 = {
+			type = "group", order = 1,
+			name = " ",
+			inline = true,
+			args = {
+				ShowGuild = {
+					type = "toggle", order = 1,
+					width = "full", descStyle = "",
+					name = "|TInterface\\GuildFrame\\GuildLogo-NoLogo:16:16:1:0:64:64:14:51:14:51|t  "..SHOW.." |cff40FF40"..GUILD.."|r",
+				},
+				ChatGuild = {
+					type = "toggle", order = 2,
+					width = "full", descStyle = "",
+					name = "|TInterface\\Icons\\Ability_Warrior_RallyingCry:16:16:1:0"..crop.."|t  |cff40FF40"..GUILD.."|r "..CHAT_ANNOUNCE,
+				},
+				Screenshot = {
+					type = "toggle", order = 3,
+					width = "full", descStyle = "",
+					name = "|TInterface\\Icons\\inv_misc_spyglass_03:16:16:1:0"..crop.."|t  "..BINDING_NAME_SCREENSHOT,
+				},
+			},
+		},
+		DingMsg = {
+			type = "input", order = 2,
+			width = "full",
+			name = " ",
+			usage = "\n|cffADFF2FLEVEL|r, |cffF6ADC6LEVEL-|r, |cff71D5FFTIME|r, |cff71D5FFTOTAL|r",
+			set = function(i, v) db.DingMsg = v
+				if strtrim(v) == "" then db.DingMsg = defaults.DingMsg end
+			end,
+		},
+		Preview = {
+			type = "description", order = 3,
+			name = function() return "  "..LevelText(db.DingMsg, args, true) end,
+		},
+	},
+}
 
-	if days > 0 then
-		return format("%s:%02.f:%02.f:%02.f", days, hours, minutes, seconds)
-	elseif hours > 0 then
-		return format("%s:%02.f:%02.f", hours, minutes, seconds)
-	else
-		return format("%02.f:%02.f   ", minutes, seconds)
+	----------------------
+	--- Initialization ---
+	----------------------
+
+local f = CreateFrame("Frame")
+
+function f:OnEvent(event, ...)
+	self[event](self, ...)
+end
+
+local delay = 0
+
+-- wait 3 sec first for any other AddOns that want to request /played too
+function f:WaitPlayed(elapsed)
+	delay = delay + elapsed
+	if delay > 3 then
+		if S.totalTPM == 0 then
+			filterPlayed = true
+			RequestTimePlayed()
+		end
+		self:SetScript("OnUpdate", nil)
 	end
 end
 
-if playerLevel < 85 then
-	SD:ScheduleRepeatingTimer(function()
-		dataobject.text = TimetoMilitaryTime(TPM_current + AddedTime())
-	end, 1)
-else
-	dataobject.text = NAME
+function f:ADDON_LOADED(name)
+	if name == NAME then
+		SimpleDingDB2 = SimpleDingDB2 or defaults
+		db = SimpleDingDB2
+		db.version = VERSION
+		
+		ACR:RegisterOptionsTable(NAME, options)
+		ACD:AddToBlizOptions(NAME, NAME)
+		ACD:SetDefaultSize(NAME, 400, 260)
+		
+		-- support [Class Colors] by Phanx
+		if CUSTOM_CLASS_COLORS then
+			CUSTOM_CLASS_COLORS:RegisterCallback(function()
+				wipe(classCache)
+			end, self)
+		end
+		
+		f:SetScript("OnUpdate", f.WaitPlayed)
+		
+		AT:ScheduleRepeatingTimer(function()
+			if db.ShowGuild then
+				GuildRoster() -- fires GUILD_ROSTER_UPDATE
+			end
+		end, 11)
+		
+		for _, v in ipairs(events) do
+			self:RegisterEvent(v)
+		end
+		self:UnregisterEvent("ADDON_LOADED")
+	end
 end
 
-LibStub("LibDataBroker-1.1"):NewDataObject("SimpleDing", dataobject)
+f:RegisterEvent("ADDON_LOADED")
+f:SetScript("OnEvent", f.OnEvent)
+
+	----------------
+	--- Level Up ---
+	----------------
+
+local playerDinged
+
+function f:PLAYER_LEVEL_UP(level)
+	player.level = level -- on another note, UnitLevel is not yet updated
+	playerDinged, filterPlayed = true, true
+	RequestTimePlayed() -- TIME_PLAYED_MSG
+end
+
+function f:TIME_PLAYED_MSG(...)
+	S.totalTPM, S.curTPM = ...
+	S.lastPlayed = time()
+	
+	if playerDinged then
+		playerDinged = false
+		
+		-- undinged LevelTime + (dinged TotalTime - undinged TotalTime)
+		S.LevelTime = curTPM2 + (S.totalTPM - totalTPM2)
+		
+		local text = LevelText(db.DingMsg, args)
+		
+		-- party/raid
+		SendChatMessage(text, GetNumRaidMembers() > 0 and "RAID" or GetNumPartyMembers() > 0 and "PARTY" or "SAY")
+		
+		-- guild
+		if db.ChatGuild and IsInGuild() then
+			SendChatMessage(text, "GUILD")
+		end
+		
+		-- screenshot
+		if db.Screenshot then
+			AT:ScheduleTimer(function() Screenshot() end, 1)
+		end
+	end
+	
+	-- update for next levelup
+	totalTPM2, curTPM2 = S.totalTPM, S.curTPM
+end
+
+	-------------
+	--- Guild ---
+	-------------
+
+local cd = 0
+local guild = {}
+local color = {r=.25, g=1, b=.25}
+local GUILD_NEWS_FORMAT6A = GUILD_NEWS_FORMAT6:gsub("%%d", "%%s") -- want to color level
+
+function f:GUILD_ROSTER_UPDATE()
+	if IsInGuild() and db.ShowGuild and time() > cd then
+		cd = time() + 10
+		for i = 1, GetNumGuildMembers() do
+			local name, _, _, level, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
+			-- sanity checks
+			if name and name ~= player.name and guild[name] and level > guild[name] then
+				local msg = format(GUILD_NEWS_FORMAT6A, "|cff"..classCache[class]..name.."|r", "|cffADFF2F"..level.."|r")
+				RaidNotice_AddMessage(RaidWarningFrame, msg, color)
+			end
+			guild[name] = level
+		end
+	end
+end

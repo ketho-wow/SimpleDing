@@ -1,20 +1,16 @@
 ## Interface: 40300
-## Version: 0.3
+## Version: 0.4
 ## Title: SimpleDing
 ## Notes: Leveling AddOn
 ## Author: Ketho @ EU-Boulderfist
-## SavedVariables: SimpleDingDB
+## SavedVariables: SimpleDingDB2
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
 
 #@no-lib-strip@
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
-Libs\AceAddon-3.0\AceAddon-3.0.xml
-Libs\AceEvent-3.0\AceEvent-3.0.xml
 Libs\AceTimer-3.0\AceTimer-3.0.xml
-Libs\AceDB-3.0\AceDB-3.0.xml
-Libs\AceConsole-3.0\AceConsole-3.0.xml
 Libs\AceGUI-3.0\AceGUI-3.0.xml
 Libs\AceConfig-3.0\AceConfig-3.0.xml
 #@end-no-lib-strip@
@@ -22,3 +18,4 @@ Libs\AceConfig-3.0\AceConfig-3.0.xml
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 
 SimpleDing.lua
+Broker.lua
