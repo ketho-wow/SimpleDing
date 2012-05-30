@@ -1,9 +1,9 @@
 ## Interface: 40300
-## Version: 0.4
+## Version: 0.5
 ## Title: SimpleDing
 ## Notes: Leveling AddOn
 ## Author: Ketho @ EU-Boulderfist
-## SavedVariables: SimpleDingDB2
+## SavedVariables: SimpleDingDB3
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
 
@@ -16,6 +16,8 @@ Libs\AceConfig-3.0\AceConfig-3.0.xml
 #@end-no-lib-strip@
 
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+
+Locales.lua
 
 SimpleDing.lua
 Broker.lua

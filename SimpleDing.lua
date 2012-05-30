@@ -2,19 +2,20 @@
 --- Author: Ketho (EU-Boulderfist)		---
 --- License: Public Domain				---
 --- Created: 2011.02.25					---
---- Version: 0.4 [2012.05.20]			---
+--- Version: 0.5 [2012.05.30]			---
 -------------------------------------------
 --- Curse			http://www.curse.com/addons/wow/simpleding
 --- WoWInterface	http://www.wowinterface.com/downloads/info19479-SimpleDing.html
 
 local NAME, S = ...
-local VERSION = 0.4
+local VERSION = 0.5
 local BUILD = "Release"
 
 local AT = LibStub("AceTimer-3.0")
 local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
 
+local L = S.L
 local db
 
 local time = time
@@ -138,8 +139,10 @@ local function ReplaceArgs(msg, args)
 	return msg
 end
 
-local function LevelText(msg, args, isPreview)
-	wipe(args)
+local function LevelText(isPreview)
+	local args = args; wipe(args)
+	local msg = db.DingMsg
+	
 	if isPreview then
 		args.level = "|cffADFF2F"..(player.level == player.maxlevel and player.level or player.level + 1).."|r"
 		args["level-"] = "|cffF6ADC6"..player.level.."|r"
@@ -196,7 +199,8 @@ end
 	---------------
 
 local defaults = {
-	DingMsg = "Ding! "..LEVEL.." <LEVEL> in <TIME>",
+	db_version = 0.5, -- update this on savedvars changes
+	DingMsg = L.MSG_PLAYER_DING,
 	ShowGuild = true,
 }
 
@@ -239,7 +243,7 @@ local options = {
 		},
 		Preview = {
 			type = "description", order = 3,
-			name = function() return "  "..LevelText(db.DingMsg, args, true) end,
+			name = function() return "  "..LevelText(true) end,
 		},
 	},
 }
@@ -270,8 +274,10 @@ end
 
 function f:ADDON_LOADED(name)
 	if name == NAME then
-		SimpleDingDB2 = SimpleDingDB2 or defaults
-		db = SimpleDingDB2
+		if not SimpleDingDB3 or SimpleDingDB3.db_version ~= 0.5 then
+			SimpleDingDB3 = defaults
+		end
+		db = SimpleDingDB3
 		db.version = VERSION
 		
 		ACR:RegisterOptionsTable(NAME, options)
@@ -325,7 +331,7 @@ function f:TIME_PLAYED_MSG(...)
 		-- undinged LevelTime + (dinged TotalTime - undinged TotalTime)
 		S.LevelTime = curTPM2 + (S.totalTPM - totalTPM2)
 		
-		local text = LevelText(db.DingMsg, args)
+		local text = LevelText()
 		
 		-- party/raid
 		SendChatMessage(text, GetNumRaidMembers() > 0 and "RAID" or GetNumPartyMembers() > 0 and "PARTY" or "SAY")
