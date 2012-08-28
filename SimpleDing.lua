@@ -2,13 +2,13 @@
 --- Author: Ketho (EU-Boulderfist)		---
 --- License: Public Domain				---
 --- Created: 2011.02.25					---
---- Version: 0.5 [2012.05.30]			---
+--- Version: 0.6 [2012.08.28]			---
 -------------------------------------------
 --- Curse			http://www.curse.com/addons/wow/simpleding
 --- WoWInterface	http://www.wowinterface.com/downloads/info19479-SimpleDing.html
 
 local NAME, S = ...
-local VERSION = 0.5
+local VERSION = 0.6
 local BUILD = "Release"
 
 local AT = LibStub("AceTimer-3.0")
@@ -272,38 +272,38 @@ function f:WaitPlayed(elapsed)
 	end
 end
 
-function f:ADDON_LOADED(name)
-	if name == NAME then
-		if not SimpleDingDB3 or SimpleDingDB3.db_version ~= 0.5 then
-			SimpleDingDB3 = defaults
-		end
-		db = SimpleDingDB3
-		db.version = VERSION
-		
-		ACR:RegisterOptionsTable(NAME, options)
-		ACD:AddToBlizOptions(NAME, NAME)
-		ACD:SetDefaultSize(NAME, 400, 260)
-		
-		-- support [Class Colors] by Phanx
-		if CUSTOM_CLASS_COLORS then
-			CUSTOM_CLASS_COLORS:RegisterCallback(function()
-				wipe(classCache)
-			end, self)
-		end
-		
-		f:SetScript("OnUpdate", f.WaitPlayed)
-		
-		AT:ScheduleRepeatingTimer(function()
-			if db.ShowGuild then
-				GuildRoster() -- fires GUILD_ROSTER_UPDATE
-			end
-		end, 11)
-		
-		for _, v in ipairs(events) do
-			self:RegisterEvent(v)
-		end
-		self:UnregisterEvent("ADDON_LOADED")
+function f:ADDON_LOADED(addon)
+	if addon ~= NAME then return end
+	
+	if not SimpleDingDB3 or SimpleDingDB3.db_version ~= 0.5 then
+		SimpleDingDB3 = defaults
 	end
+	db = SimpleDingDB3
+	db.version = VERSION
+	
+	ACR:RegisterOptionsTable(NAME, options)
+	ACD:AddToBlizOptions(NAME, NAME)
+	ACD:SetDefaultSize(NAME, 400, 260)
+	
+	-- support [Class Colors] by Phanx
+	if CUSTOM_CLASS_COLORS then
+		CUSTOM_CLASS_COLORS:RegisterCallback(function()
+			wipe(classCache)
+		end, self)
+	end
+	
+	f:SetScript("OnUpdate", f.WaitPlayed)
+	
+	AT:ScheduleRepeatingTimer(function()
+		if db.ShowGuild then
+			GuildRoster() -- fires GUILD_ROSTER_UPDATE
+		end
+	end, 11)
+	
+	for _, v in ipairs(events) do
+		self:RegisterEvent(v)
+	end
+	self:UnregisterEvent("ADDON_LOADED")
 end
 
 f:RegisterEvent("ADDON_LOADED")
@@ -334,7 +334,7 @@ function f:TIME_PLAYED_MSG(...)
 		local text = LevelText()
 		
 		-- party/raid
-		SendChatMessage(text, GetNumRaidMembers() > 0 and "RAID" or GetNumPartyMembers() > 0 and "PARTY" or "SAY")
+		SendChatMessage(text, GetNumGroupMembers() > 0 and "RAID" or GetNumSubgroupMembers() > 0 and "PARTY" or "SAY")
 		
 		-- guild
 		if db.ChatGuild and IsInGuild() then
