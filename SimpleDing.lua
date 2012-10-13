@@ -2,14 +2,13 @@
 --- Author: Ketho (EU-Boulderfist)		---
 --- License: Public Domain				---
 --- Created: 2011.02.25					---
---- Version: 0.6 [2012.08.28]			---
+--- Version: 0.7 [2012.10.13]			---
 -------------------------------------------
 --- Curse			http://www.curse.com/addons/wow/simpleding
 --- WoWInterface	http://www.wowinterface.com/downloads/info19479-SimpleDing.html
 
 local NAME, S = ...
-local VERSION = 0.6
-local BUILD = "Release"
+local VERSION = 0.7
 
 local AT = LibStub("AceTimer-3.0")
 local ACR = LibStub("AceConfigRegistry-3.0")
@@ -169,9 +168,7 @@ end
 	--- Slash Command ---
 	---------------------
 
-local slashCmds = {"sd", "simpleding"}
-
-for i, v in ipairs(slashCmds) do
+for i, v in ipairs({"sd", "simpleding"}) do
 	_G["SLASH_SIMPLEDING"..i] = "/"..v
 end
 
@@ -334,7 +331,7 @@ function f:TIME_PLAYED_MSG(...)
 		local text = LevelText()
 		
 		-- party/raid
-		SendChatMessage(text, GetNumGroupMembers() > 0 and "RAID" or GetNumSubgroupMembers() > 0 and "PARTY" or "SAY")
+		SendChatMessage(text, IsInRaid() and "RAID" or IsInGroup() and "PARTY" or "SAY")
 		
 		-- guild
 		if db.ChatGuild and IsInGuild() then

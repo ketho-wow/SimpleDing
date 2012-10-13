@@ -1,5 +1,5 @@
 ## Interface: 50001
-## Version: 0.6
+## Version: 0.7
 ## Title: SimpleDing
 ## Notes: Leveling AddOn
 ## Author: Ketho @ EU-Boulderfist
