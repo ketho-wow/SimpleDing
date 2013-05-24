@@ -2,13 +2,14 @@
 --- Author: Ketho (EU-Boulderfist)		---
 --- License: Public Domain				---
 --- Created: 2011.02.25					---
---- Version: 0.7 [2012.10.13]			---
+--- Version: 0.8 [2013.05.24]			---
 -------------------------------------------
 --- Curse			http://www.curse.com/addons/wow/simpleding
 --- WoWInterface	http://www.wowinterface.com/downloads/info19479-SimpleDing.html
 
 local NAME, S = ...
-local VERSION = 0.7
+local VERSION = GetAddOnMetadata(NAME, "Version")
+local BUILD = "Release"
 
 local AT = LibStub("AceTimer-3.0")
 local ACR = LibStub("AceConfigRegistry-3.0")
@@ -272,7 +273,7 @@ end
 function f:ADDON_LOADED(addon)
 	if addon ~= NAME then return end
 	
-	if not SimpleDingDB3 or SimpleDingDB3.db_version ~= 0.5 then
+	if not SimpleDingDB3 or SimpleDingDB3.db_version ~= defaults.db_version then
 		SimpleDingDB3 = defaults
 	end
 	db = SimpleDingDB3
@@ -331,7 +332,8 @@ function f:TIME_PLAYED_MSG(...)
 		local text = LevelText()
 		
 		-- party/raid
-		SendChatMessage(text, IsInRaid() and "RAID" or IsInGroup() and "PARTY" or "SAY")
+		local isBattleground = select(2, IsInInstance()) == "pvp"
+		SendChatMessage(text, (IsPartyLFG() or isBattleground) and "INSTANCE_CHAT" or IsInRaid() and "RAID" or IsInGroup() and "PARTY" or "SAY")
 		
 		-- guild
 		if db.ChatGuild and IsInGuild() then
