@@ -1,4 +1,4 @@
-﻿local _, S = ...
+local _, S = ...
 
 local L = {
 	deDE = {
@@ -24,8 +24,10 @@ local L = {
 	ruRU = {
 	},
 	zhCN = {
+		MSG_PLAYER_DING = "升级! 等级 <LEVEL> 使用 <TIME>",
 	},
 	zhTW = {
+		MSG_PLAYER_DING = "升級! 等級 <LEVEL> 使用 <TIME>",
 	},
 }
 

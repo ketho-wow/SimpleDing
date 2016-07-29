@@ -1,28 +1,15 @@
--------------------------------------------
---- Author: Ketho (EU-Boulderfist)		---
---- License: Public Domain				---
---- Created: 2011.02.25					---
---- Version: 0.8 [2013.05.24]			---
--------------------------------------------
---- Curse			http://www.curse.com/addons/wow/simpleding
---- WoWInterface	http://www.wowinterface.com/downloads/info19479-SimpleDing.html
+-- Author: Ketho (EU-Boulderfist)
+-- License: Public Domain
 
 local NAME, S = ...
 local VERSION = GetAddOnMetadata(NAME, "Version")
 local BUILD = "Release"
 
-local AT = LibStub("AceTimer-3.0")
 local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
 
 local L = S.L
 local db
-
-local time = time
-local format, gsub = format, gsub
-local floor = floor
-
-local GetGuildRosterInfo = GetGuildRosterInfo
 
 	-----------------
 	--- Time Vars ---
@@ -109,17 +96,6 @@ local function Time(v)
 	return b:GetText(b:SetText(s)) or ""
 end
 
-	--------------------
-	--- Class Colors ---
-	--------------------
-
-local classCache = setmetatable({}, {__index = function(t, k)
-	local color = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[k] or RAID_CLASS_COLORS[k]
-	local v = format("%02X%02X%02X", color.r*255, color.g*255, color.b*255)
-	rawset(t, k, v)
-	return v
-end})
-
 	---------------
 	--- Replace ---
 	---------------
@@ -199,7 +175,6 @@ end
 local defaults = {
 	db_version = 0.5, -- update this on savedvars changes
 	DingMsg = L.MSG_PLAYER_DING,
-	ShowGuild = true,
 }
 
 local options = {
@@ -213,15 +188,10 @@ local options = {
 			name = " ",
 			inline = true,
 			args = {
-				ShowGuild = {
-					type = "toggle", order = 1,
-					width = "full", descStyle = "",
-					name = "|TInterface\\GuildFrame\\GuildLogo-NoLogo:16:16:1:0:64:64:14:51:14:51|t  "..SHOW.." |cff40FF40"..GUILD.."|r",
-				},
 				ChatGuild = {
 					type = "toggle", order = 2,
 					width = "full", descStyle = "",
-					name = "|TInterface\\Icons\\Ability_Warrior_RallyingCry:16:16:1:0"..crop.."|t  |cff40FF40"..GUILD.."|r "..CHAT_ANNOUNCE,
+					name = "|TInterface\\Icons\\Ability_Warrior_RallyingCry:16:16:1:0"..crop.."|t  "..GUILD.." "..CHAT_ANNOUNCE,
 				},
 				Screenshot = {
 					type = "toggle", order = 3,
@@ -283,20 +253,7 @@ function f:ADDON_LOADED(addon)
 	ACD:AddToBlizOptions(NAME, NAME)
 	ACD:SetDefaultSize(NAME, 400, 260)
 	
-	-- support [Class Colors] by Phanx
-	if CUSTOM_CLASS_COLORS then
-		CUSTOM_CLASS_COLORS:RegisterCallback(function()
-			wipe(classCache)
-		end, self)
-	end
-	
 	f:SetScript("OnUpdate", f.WaitPlayed)
-	
-	AT:ScheduleRepeatingTimer(function()
-		if db.ShowGuild then
-			GuildRoster() -- fires GUILD_ROSTER_UPDATE
-		end
-	end, 11)
 	
 	for _, v in ipairs(events) do
 		self:RegisterEvent(v)
@@ -342,7 +299,7 @@ function f:TIME_PLAYED_MSG(...)
 		
 		-- screenshot
 		if db.Screenshot then
-			AT:ScheduleTimer(function() Screenshot() end, 1)
+			C_Timer.After(1, Screenshot)
 		end
 	end
 	
@@ -350,26 +307,3 @@ function f:TIME_PLAYED_MSG(...)
 	totalTPM2, curTPM2 = S.totalTPM, S.curTPM
 end
 
-	-------------
-	--- Guild ---
-	-------------
-
-local cd = 0
-local guild = {}
-local color = {r=.25, g=1, b=.25}
-local GUILD_NEWS_FORMAT6A = GUILD_NEWS_FORMAT6:gsub("%%d", "%%s") -- want to color level
-
-function f:GUILD_ROSTER_UPDATE()
-	if IsInGuild() and db.ShowGuild and time() > cd then
-		cd = time() + 10
-		for i = 1, GetNumGuildMembers() do
-			local name, _, _, level, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
-			-- sanity checks
-			if name and name ~= player.name and guild[name] and level > guild[name] then
-				local msg = format(GUILD_NEWS_FORMAT6A, "|cff"..classCache[class]..name.."|r", "|cffADFF2F"..level.."|r")
-				RaidNotice_AddMessage(RaidWarningFrame, msg, color)
-			end
-			guild[name] = level
-		end
-	end
-end
