@@ -3,7 +3,6 @@
 
 local NAME, S = ...
 local VERSION = GetAddOnMetadata(NAME, "Version")
-local BUILD = "Release"
 
 local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
@@ -11,26 +10,14 @@ local ACD = LibStub("AceConfigDialog-3.0")
 local L = S.L
 local db
 
-	-----------------
-	--- Time Vars ---
-	-----------------
-
 S.lastPlayed = time()
 S.totalTPM, S.curTPM = 0, 0
 local curTPM2, totalTPM2
-
-	------------
-	--- Rest ---
-	------------
 
 local filterPlayed
 
 local crop = ":64:64:4:60:4:60"
 local args = {}
-
-	--------------
-	--- Player ---
-	--------------
 
 S.player = {
 	name = UnitName("player"),
@@ -38,16 +25,6 @@ S.player = {
 	maxlevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()],
 }
 local player = S.player
-
-	--------------
-	--- Events ---
-	--------------
-
-local events = {
-	"PLAYER_LEVEL_UP",
-	"TIME_PLAYED_MSG",
-	"GUILD_ROSTER_UPDATE",
-}
 
 	------------
 	--- Time ---
@@ -141,10 +118,7 @@ local function LevelText(isPreview)
 	return ReplaceArgs(msg, args)
 end
 
-	---------------------
-	--- Slash Command ---
-	---------------------
-
+-- slash command
 for i, v in ipairs({"sd", "simpleding"}) do
 	_G["SLASH_SIMPLEDING"..i] = "/"..v
 end
@@ -153,10 +127,7 @@ SlashCmdList.SIMPLEDING = function(msg, editbox)
 	ACD:Open(NAME)
 end
 
-	----------------------
-	--- Filter /played ---
-	----------------------
-
+-- filter played
 local old = ChatFrame_DisplayTimePlayed
 
 function ChatFrame_DisplayTimePlayed(...)
@@ -255,9 +226,9 @@ function f:ADDON_LOADED(addon)
 	
 	f:SetScript("OnUpdate", f.WaitPlayed)
 	
-	for _, v in ipairs(events) do
-		self:RegisterEvent(v)
-	end
+	self:RegisterEvent("PLAYER_LEVEL_UP")
+	self:RegisterEvent("TIME_PLAYED_MSG")
+	
 	self:UnregisterEvent("ADDON_LOADED")
 end
 
