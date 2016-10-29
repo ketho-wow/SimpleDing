@@ -150,7 +150,7 @@ local defaults = {
 
 local options = {
 	type = "group",
-	name = format("%s |cffADFF2Fv%s|r", NAME, VERSION),
+	name = format("%s |cffADFF2F%s|r", NAME, VERSION),
 	get = function(i) return db[i[#i]] end,
 	set = function(i, v) db[i[#i]] = v end,
 	args = {
