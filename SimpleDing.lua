@@ -1,21 +1,14 @@
--- Author: Ketho (EU-Boulderfist)
--- License: Public Domain
-
 local NAME, S = ...
 local VERSION = GetAddOnMetadata(NAME, "Version")
 
 local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
-
 local L = S.L
 local db
 
 S.lastPlayed = time()
 S.totalTPM, S.curTPM = 0, 0
 local curTPM2, totalTPM2
-
-local filterPlayed
-
 local crop = ":64:64:4:60:4:60"
 local args = {}
 
@@ -25,10 +18,6 @@ S.player = {
 	maxlevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()],
 }
 local player = S.player
-
-	------------
-	--- Time ---
-	------------
 
 -- not capitalized
 local D_SECONDS = strlower(D_SECONDS)
@@ -47,16 +36,10 @@ end
 local b = CreateFrame("Button")
 
 local function Time(v)
-	local sec = floor(v) % 60
-	local minute = floor(v/60) % 60
-	local hour = floor(v/3600) % 24
-	local day = floor(v/86400)
-	
-	local fsec = format(D_SECONDS, sec)
-	local fmin = format(D_MINUTES, minute)
-	local fhour = format(D_HOURS, hour)
-	local fday = format(D_DAYS, day)
-	
+	local fsec = format(D_SECONDS, floor(v) % 60)
+	local fmin = format(D_MINUTES, floor(v/60) % 60)
+	local fhour = format(D_HOURS, floor(v/3600) % 24)
+	local fday = format(D_DAYS, floor(v/86400))
 	local s
 	if v >= 86400 then
 		s = format("%s, %s", fday, fhour)
@@ -73,20 +56,13 @@ local function Time(v)
 	return b:GetText(b:SetText(s)) or ""
 end
 
-	---------------
-	--- Replace ---
-	---------------
-
 local function ReplaceArgs(msg, args)
 	for k in gmatch(msg, "%b<>") do
 		-- remove <>, make case insensitive
 		local s = strlower(gsub(k, "[<>]", ""))
-		
 		-- escape special characters
-		-- a maybe better alternative to %p is "[%%%.%-%+%?%*%^%$%(%)%[%]%{%}]"
 		s = gsub(args[s] or s, "(%p)", "%%%1")
 		k = gsub(k, "(%p)", "%%%1")
-		
 		msg = msg:gsub(k, s)
 	end
 	return msg
@@ -95,7 +71,7 @@ end
 local function LevelText(isPreview)
 	local args = args; wipe(args)
 	local msg = db.DingMsg
-	
+
 	if isPreview then
 		args.level = "|cffADFF2F"..(player.level == player.maxlevel and player.level or player.level + 1).."|r"
 		args["level-"] = "|cffF6ADC6"..player.level.."|r"
@@ -113,7 +89,6 @@ local function LevelText(isPreview)
 		args["level-"] = player.level - 1
 		args.time = Time(S.LevelTime)
 		args.total = Time(S.totalTPM)
-		
 	end
 	return ReplaceArgs(msg, args)
 end
@@ -123,25 +98,9 @@ for i, v in ipairs({"sd", "simpleding"}) do
 	_G["SLASH_SIMPLEDING"..i] = "/"..v
 end
 
-SlashCmdList.SIMPLEDING = function(msg, editbox)
+SlashCmdList.SIMPLEDING = function()
 	ACD:Open(NAME)
 end
-
--- filter played
-local old = ChatFrame_DisplayTimePlayed
-
-function ChatFrame_DisplayTimePlayed(...)
-	-- using /played manually should still work, including when it's called by other addons
-	-- when filterPlayed is true it will just only filter the next upcoming /played message
-	if not filterPlayed then
-		old(...)
-	end
-	filterPlayed = false
-end
-
-	---------------
-	--- Options ---
-	---------------
 
 local defaults = {
 	db_version = 0.5, -- update this on savedvars changes
@@ -162,7 +121,7 @@ local options = {
 				ChatGuild = {
 					type = "toggle", order = 2,
 					width = "full", descStyle = "",
-					name = "|TInterface\\Icons\\Ability_Warrior_RallyingCry:16:16:1:0"..crop.."|t  "..GUILD.." "..CHAT_ANNOUNCE,
+					name = "|TInterface\\Icons\\inv_shirt_guildtabard_01:16:16:1:0"..crop.."|t  "..GUILD.." "..CHAT_ANNOUNCE,
 				},
 				Screenshot = {
 					type = "toggle", order = 3,
@@ -187,94 +146,68 @@ local options = {
 	},
 }
 
-	----------------------
-	--- Initialization ---
-	----------------------
-
 local f = CreateFrame("Frame")
 
 function f:OnEvent(event, ...)
 	self[event](self, ...)
 end
 
-local delay = 0
-
--- wait 3 sec first for any other AddOns that want to request /played too
-function f:WaitPlayed(elapsed)
-	delay = delay + elapsed
-	if delay > 3 then
-		if S.totalTPM == 0 then
-			filterPlayed = true
-			RequestTimePlayed()
-		end
-		self:SetScript("OnUpdate", nil)
-	end
-end
-
 function f:ADDON_LOADED(addon)
 	if addon ~= NAME then return end
-	
 	if not SimpleDingDB3 or SimpleDingDB3.db_version ~= defaults.db_version then
-		SimpleDingDB3 = defaults
+		SimpleDingDB3 = CopyTable(defaults)
 	end
 	db = SimpleDingDB3
 	db.version = VERSION
-	
 	ACR:RegisterOptionsTable(NAME, options)
 	ACD:AddToBlizOptions(NAME, NAME)
 	ACD:SetDefaultSize(NAME, 400, 260)
-	
-	f:SetScript("OnUpdate", f.WaitPlayed)
-	
+
+	-- wait for any other AddOns that want to request /played too
+	C_Timer.After(1, function()
+		if S.totalTPM == 0 then
+			local success = DEFAULT_CHAT_FRAME:UnregisterEvent("TIME_PLAYED_MSG")
+			RequestTimePlayed()
+			if success then
+				C_Timer.After(1, function()
+					DEFAULT_CHAT_FRAME:RegisterEvent("TIME_PLAYED_MSG")
+				end)
+			end
+		end
+	end)
 	self:RegisterEvent("PLAYER_LEVEL_UP")
 	self:RegisterEvent("TIME_PLAYED_MSG")
-	
 	self:UnregisterEvent("ADDON_LOADED")
 end
 
 f:RegisterEvent("ADDON_LOADED")
 f:SetScript("OnEvent", f.OnEvent)
 
-	----------------
-	--- Level Up ---
-	----------------
-
 local playerDinged
 
 function f:PLAYER_LEVEL_UP(level)
 	player.level = level -- on another note, UnitLevel is not yet updated
-	playerDinged, filterPlayed = true, true
-	RequestTimePlayed() -- TIME_PLAYED_MSG
+	playerDinged = true
+	RequestTimePlayed() -- fires TIME_PLAYED_MSG
 end
 
 function f:TIME_PLAYED_MSG(...)
 	S.totalTPM, S.curTPM = ...
 	S.lastPlayed = time()
-	
 	if playerDinged then
 		playerDinged = false
-		
 		-- undinged LevelTime + (dinged TotalTime - undinged TotalTime)
 		S.LevelTime = curTPM2 + (S.totalTPM - totalTPM2)
-		
 		local text = LevelText()
-		
-		-- party/raid
-		local isBattleground = select(2, IsInInstance()) == "pvp"
-		SendChatMessage(text, (IsPartyLFG() or isBattleground) and "INSTANCE_CHAT" or IsInRaid() and "RAID" or IsInGroup() and "PARTY" or "SAY")
-		
-		-- guild
+
+		SendChatMessage(text)
 		if db.ChatGuild and IsInGuild() then
 			SendChatMessage(text, "GUILD")
 		end
-		
-		-- screenshot
 		if db.Screenshot then
 			C_Timer.After(1, Screenshot)
 		end
 	end
-	
 	-- update for next levelup
 	totalTPM2, curTPM2 = S.totalTPM, S.curTPM
 end
-

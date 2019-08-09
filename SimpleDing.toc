@@ -1,11 +1,17 @@
-## Interface: 70100
+#@retail@
+## Interface: 80200
+#@end-retail@
+#@non-retail@
+# ## Interface: 11302
+#@end-non-retail@
 ## Version: @project-version@
 ## Title: SimpleDing
-## Notes: Leveling AddOn
+## Notes: Ding!
 ## Author: Ketho @ EU-Boulderfist
 ## SavedVariables: SimpleDingDB3
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
+## X-Curse-Project-ID: 29132
 
 #@no-lib-strip@
 Libs\LibStub\LibStub.lua
