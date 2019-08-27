@@ -93,17 +93,9 @@ local function LevelText(isPreview)
 	return ReplaceArgs(msg, args)
 end
 
--- slash command
-for i, v in ipairs({"sd", "simpleding"}) do
-	_G["SLASH_SIMPLEDING"..i] = "/"..v
-end
-
-SlashCmdList.SIMPLEDING = function()
-	ACD:Open(NAME)
-end
-
 local defaults = {
-	db_version = 0.5, -- update this on savedvars changes
+	db_version = 2, -- update this on savedvars changes
+	ChatSay = true,
 	DingMsg = L.MSG_PLAYER_DING,
 }
 
@@ -118,10 +110,15 @@ local options = {
 			name = " ",
 			inline = true,
 			args = {
+				ChatSay = {
+					type = "toggle", order = 1,
+					width = "full", desc = "Announces to /say. If disabled, shows a message in the center of your screen instead",
+					name = "|TInterface\\ChatFrame\\UI-ChatIcon-Chat-Up:16:16|t  "..SAY,
+				},
 				ChatGuild = {
 					type = "toggle", order = 2,
-					width = "full", descStyle = "",
-					name = "|TInterface\\Icons\\inv_shirt_guildtabard_01:16:16:1:0"..crop.."|t  "..GUILD.." "..CHAT_ANNOUNCE,
+					width = "full", desc = "Announces to /guild",
+					name = "|TInterface\\Icons\\inv_shirt_guildtabard_01:16:16:1:0"..crop.."|t  "..GUILD,
 				},
 				Screenshot = {
 					type = "toggle", order = 3,
@@ -200,7 +197,11 @@ function f:TIME_PLAYED_MSG(...)
 		S.LevelTime = curTPM2 + (S.totalTPM - totalTPM2)
 		local text = LevelText()
 
-		SendChatMessage(text)
+		if db.ChatSay then
+			SendChatMessage(text)
+		else
+			RaidNotice_AddMessage(RaidWarningFrame, text, {r=1, g=1, b=0})
+		end
 		if db.ChatGuild and IsInGuild() then
 			SendChatMessage(text, "GUILD")
 		end
@@ -210,4 +211,12 @@ function f:TIME_PLAYED_MSG(...)
 	end
 	-- update for next levelup
 	totalTPM2, curTPM2 = S.totalTPM, S.curTPM
+end
+
+for i, v in ipairs({"sd", "simpleding"}) do
+	_G["SLASH_SIMPLEDING"..i] = "/"..v
+end
+
+SlashCmdList.SIMPLEDING = function()
+	ACD:Open(NAME)
 end
