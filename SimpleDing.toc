@@ -12,6 +12,7 @@
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
 ## X-Curse-Project-ID: 29132
+## X-WoWI-ID: 19479
 
 #@no-lib-strip@
 Libs\LibStub\LibStub.lua
