@@ -12,10 +12,20 @@ local curTPM2, totalTPM2
 local crop = ":64:64:4:60:4:60"
 local args = {}
 
+local isClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
+
+local function GetCompatMaxLevel()
+	if isClassic then
+		return MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
+	else
+		return GetMaxLevelForPlayerExpansion()
+	end
+end
+
 S.player = {
 	name = UnitName("player"),
 	level = UnitLevel("player"),
-	maxlevel = GetMaxLevelForPlayerExpansion(),
+	maxlevel = GetCompatMaxLevel(),
 }
 local player = S.player
 
