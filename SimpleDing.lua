@@ -221,8 +221,12 @@ function f:TIME_PLAYED_MSG(...)
 		S.LevelTime = curTPM2 + (S.totalTPM - totalTPM2)
 		local text = LevelText()
 
-		if db.ChatSay and CanSendChatMessage() then
-			SendChatMessage(text)
+		if db.ChatSay then
+			if CanSendChatMessage() then
+				SendChatMessage(text)
+			else
+				SendChatMessage(text, "EMOTE")
+			end
 		else
 			RaidNotice_AddMessage(RaidWarningFrame, text, {r=1, g=1, b=0})
 		end
