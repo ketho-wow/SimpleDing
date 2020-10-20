@@ -15,7 +15,7 @@ local args = {}
 S.player = {
 	name = UnitName("player"),
 	level = UnitLevel("player"),
-	maxlevel = MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()],
+	maxlevel = GetMaxLevelForPlayerExpansion(),
 }
 local player = S.player
 
@@ -93,6 +93,20 @@ local function LevelText(isPreview)
 	return ReplaceArgs(msg, args)
 end
 
+local requiresHw = {
+	SAY = true,
+	YELL = true,
+	CHANNEL = true,
+}
+
+local function CanSendChatMessage(chatType)
+	local _, instanceType = IsInInstance()
+	if instanceType == "none" and requiresHw[chatType or "SAY"]  then
+		return false
+	end
+	return true
+end
+
 local defaults = {
 	db_version = 2, -- update this on savedvars changes
 	ChatSay = true,
@@ -112,7 +126,7 @@ local options = {
 			args = {
 				ChatSay = {
 					type = "toggle", order = 1,
-					width = "full", desc = "Announces to /say. If disabled, shows a message in the center of your screen instead",
+					width = "full", desc = "Announces to |cff71D5FF/say|r. Otherwise shows a message in the center of your screen",
 					name = "|TInterface\\ChatFrame\\UI-ChatIcon-Chat-Up:16:16|t  "..SAY,
 				},
 				ChatGuild = {
@@ -197,7 +211,7 @@ function f:TIME_PLAYED_MSG(...)
 		S.LevelTime = curTPM2 + (S.totalTPM - totalTPM2)
 		local text = LevelText()
 
-		if db.ChatSay then
+		if db.ChatSay and CanSendChatMessage() then
 			SendChatMessage(text)
 		else
 			RaidNotice_AddMessage(RaidWarningFrame, text, {r=1, g=1, b=0})
