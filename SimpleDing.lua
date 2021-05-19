@@ -12,13 +12,13 @@ local curTPM2, totalTPM2
 local crop = ":64:64:4:60:4:60"
 local args = {}
 
-local isClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
+local isRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
 
 local function GetCompatMaxLevel()
-	if isClassic then
-		return MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
-	else
+	if isRetail then
 		return GetMaxLevelForPlayerExpansion()
+	else
+		return MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
 	end
 end
 
