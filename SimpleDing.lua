@@ -174,31 +174,34 @@ function f:OnEvent(event, ...)
 end
 
 function f:ADDON_LOADED(addon)
-	if addon ~= NAME then return end
-	if not SimpleDingDB3 or SimpleDingDB3.db_version ~= defaults.db_version then
-		SimpleDingDB3 = CopyTable(defaults)
-	end
-	db = SimpleDingDB3
-	db.version = VERSION
-	ACR:RegisterOptionsTable(NAME, options)
-	ACD:AddToBlizOptions(NAME, NAME)
-	ACD:SetDefaultSize(NAME, 400, 260)
-
-	-- wait for any other AddOns that want to request /played too
-	C_Timer.After(1, function()
-		if S.totalTPM == 0 then
-			local success = DEFAULT_CHAT_FRAME:UnregisterEvent("TIME_PLAYED_MSG")
-			RequestTimePlayed()
-			if success then
-				C_Timer.After(1, function()
-					DEFAULT_CHAT_FRAME:RegisterEvent("TIME_PLAYED_MSG")
-				end)
+	if addon == NAME then
+		SimpleDingDB3 = SimpleDingDB3 or CopyTable(defaults)
+		db = SimpleDingDB3
+		for k, v in pairs(defaults) do
+			if db[k] == nil then
+				db[k] = v
 			end
 		end
-	end)
-	self:RegisterEvent("PLAYER_LEVEL_UP")
-	self:RegisterEvent("TIME_PLAYED_MSG")
-	self:UnregisterEvent("ADDON_LOADED")
+		ACR:RegisterOptionsTable(NAME, options)
+		ACD:AddToBlizOptions(NAME, NAME)
+		ACD:SetDefaultSize(NAME, 400, 260)
+
+		-- wait for any other AddOns that want to request /played too
+		C_Timer.After(1, function()
+			if S.totalTPM == 0 then
+				local success = DEFAULT_CHAT_FRAME:UnregisterEvent("TIME_PLAYED_MSG")
+				RequestTimePlayed()
+				if success then
+					C_Timer.After(1, function()
+						DEFAULT_CHAT_FRAME:RegisterEvent("TIME_PLAYED_MSG")
+					end)
+				end
+			end
+		end)
+		self:RegisterEvent("PLAYER_LEVEL_UP")
+		self:RegisterEvent("TIME_PLAYED_MSG")
+		self:UnregisterEvent("ADDON_LOADED")
+	end
 end
 
 f:RegisterEvent("ADDON_LOADED")

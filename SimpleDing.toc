@@ -1,13 +1,12 @@
 ## Interface-Retail: 90005
 ## Interface-Classic: 11307
-## Interface-BC: 20501
+## Interface-BCC: 20501
 ## Version: @project-version@
 ## Title: SimpleDing
 ## Notes: Ding!
 ## Author: Ketho @ EU-Boulderfist
 ## SavedVariables: SimpleDingDB3
 ## OptionalDeps: Ace3
-## X-Embeds: Ace3
 ## X-Curse-Project-ID: 29132
 ## X-WoWI-ID: 19479
 
