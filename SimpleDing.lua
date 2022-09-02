@@ -136,12 +136,12 @@ local options = {
 			args = {
 				ChatSay = {
 					type = "toggle", order = 1,
-					width = "full", desc = "Announces to |cff71D5FF/say|r. Otherwise shows a message in the center of your screen",
+					width = "full", desc = "Announces to |cff71D5FF/say|r or |cff71D5FF/emote|r. Otherwise shows a message in the center of your screen",
 					name = "|TInterface\\ChatFrame\\UI-ChatIcon-Chat-Up:16:16|t  "..SAY,
 				},
 				ChatGuild = {
 					type = "toggle", order = 2,
-					width = "full", desc = "Announces to /guild",
+					width = "full", desc = "Announces to |cff71D5FF/guild|r",
 					name = "|TInterface\\Icons\\inv_shirt_guildtabard_01:16:16:1:0"..crop.."|t  "..GUILD,
 				},
 				Screenshot = {

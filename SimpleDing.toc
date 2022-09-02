@@ -1,6 +1,6 @@
-## Interface-Retail: 90005
-## Interface-Classic: 11307
-## Interface-BCC: 20501
+## Interface: 90207
+## Interface-Classic: 11403
+## Interface-Wrath: 30400
 ## Version: @project-version@
 ## Title: SimpleDing
 ## Notes: Ding!
@@ -9,6 +9,7 @@
 ## OptionalDeps: Ace3
 ## X-Curse-Project-ID: 29132
 ## X-WoWI-ID: 19479
+## X-Wago-ID: XrNk7eNa
 
 #@no-lib-strip@
 Libs\LibStub\LibStub.lua
