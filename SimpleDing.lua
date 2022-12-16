@@ -237,7 +237,7 @@ function f:TIME_PLAYED_MSG(...)
 			SendChatMessage(text, "GUILD")
 		end
 		if db.Screenshot then
-			C_Timer.After(1, Screenshot)
+			C_Timer.After(1, function() Screenshot() end)
 		end
 	end
 	-- update for next levelup
