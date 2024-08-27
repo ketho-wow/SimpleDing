@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field
 local NAME, S = ...
 local VERSION = C_AddOns.GetAddOnMetadata(NAME, "Version")
 

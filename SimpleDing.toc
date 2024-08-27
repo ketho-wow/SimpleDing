@@ -5,6 +5,7 @@
 ## Author: Ketho @ EU-Boulderfist
 ## SavedVariables: SimpleDingDB3
 ## OptionalDeps: Ace3
+## IconTexture: 614740
 ## X-Curse-Project-ID: 29132
 ## X-WoWI-ID: 19479
 ## X-Wago-ID: XrNk7eNa
