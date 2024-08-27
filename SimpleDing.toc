@@ -1,6 +1,4 @@
-## Interface: 100002
-## Interface-Wrath: 30400
-## Interface-Classic: 11403
+## Interface: 110002, 40400, 11503
 ## Version: @project-version@
 ## Title: SimpleDing
 ## Notes: Ding!

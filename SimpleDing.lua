@@ -1,5 +1,5 @@
 local NAME, S = ...
-local VERSION = GetAddOnMetadata(NAME, "Version")
+local VERSION = C_AddOns.GetAddOnMetadata(NAME, "Version")
 
 local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
