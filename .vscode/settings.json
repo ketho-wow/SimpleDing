@@ -29,6 +29,7 @@
         "GUILD",
         "BINDING_NAME_SCREENSHOT",
         "TUTORIAL_TITLE55",
-        "LEVEL"
+        "LEVEL",
+        "MAX_PLAYER_LEVEL_TABLE"
     ]
 }
