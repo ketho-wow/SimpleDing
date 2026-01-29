@@ -1,4 +1,4 @@
-## Interface: 110002, 40400, 11503
+## Interface: 120001, 120000, 50503, 20505, 11508
 ## Version: @project-version@
 ## Title: SimpleDing
 ## Notes: Ding!
@@ -9,6 +9,18 @@
 ## X-Curse-Project-ID: 29132
 ## X-WoWI-ID: 19479
 ## X-Wago-ID: XrNk7eNa
+
+## Category: Chat
+## Category-deDE: Chat
+## Category-esES: Chat
+## Category-esMX: Chat
+## Category-frFR: Discussion
+## Category-itIT: Chat
+## Category-koKR: 대화
+## Category-ptBR: Bate-papo
+## Category-ruRU: Чат
+## Category-zhCN: 聊天
+## Category-zhTW: 對話
 
 #@no-lib-strip@
 Libs\LibStub\LibStub.lua

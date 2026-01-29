@@ -227,15 +227,15 @@ function f:TIME_PLAYED_MSG(...)
 
 		if db.ChatSay then
 			if CanSendChatMessage() then
-				SendChatMessage(text)
+				C_ChatInfo.SendChatMessage(text)
 			else
-				SendChatMessage(text, "EMOTE")
+				C_ChatInfo.SendChatMessage(text, "EMOTE")
 			end
 		else
 			RaidNotice_AddMessage(RaidWarningFrame, text, {r=1, g=1, b=0})
 		end
 		if db.ChatGuild and IsInGuild() then
-			SendChatMessage(text, "GUILD")
+			C_ChatInfo.SendChatMessage(text, "GUILD")
 		end
 		if db.Screenshot then
 			C_Timer.After(1, function() Screenshot() end)
